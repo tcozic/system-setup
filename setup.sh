@@ -46,6 +46,8 @@ echo "Installing Nerds Fonts..."
 install_brew_casks "${NERDS_FONTS[@]}"
 echo "Installing TPM"
 install_tpm
+echo "Installing Zinit"
+install_zinit
 echo "Setting up stowed config"
 dotfiles_setup
 if [[ "$DESKTOP_INSTALL" == true ]]; then

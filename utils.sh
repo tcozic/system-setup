@@ -190,7 +190,7 @@ install_tpm() {
 dotfiles_setup() {
     STOW_LIST=(.)  # Fixed: removed space before parenthesis
     ORIGINAL_DIR=$(pwd)
-    REPO_URL=""  # You need to set this to your actual repo URL
+    REPO_URL="git@github.com:tcozic/dotfiles.git"  # You need to set this to your actual repo URL
     REPO_NAME=".dotfiles"
     
     if ! command -v stow &> /dev/null; then
