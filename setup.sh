@@ -45,19 +45,20 @@ sudo apt update
 echo "Installing CLI tools..."
 install_apt_packages "${APT_CLI_DEV_TOOLS[@]}"
 # Install all packages
+echo "Setting zsh as default shell"
+chsh -s "/bin/zsh"
 echo "install fzf"
 install_fzf 
 echo "Installing Nerds Fonts..."
 install_nerd_font "${NERDS_FONTS[@]}"
-
 echo "Setting up stowed config"
 dotfiles_setup
-echo "Installing TPM"
-install_tpm
 echo "Installing Zinit"
 install_zinit
 echo "Installing Ohmyposh"
 install_ohmyposh
+echo "Installing TPM"
+install_tpm
 echo "Installing Neovim"
 install_neovim
 if [[ "$DESKTOP_INSTALL" == true ]]; then
