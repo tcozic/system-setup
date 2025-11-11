@@ -1,4 +1,9 @@
 #!/bin/bash
+# Get the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Change to script directory to ensure relative paths work
+cd "$SCRIPT_DIR" || exit 1
 
 # Print the logo
 # Parse command line arguments
@@ -36,20 +41,23 @@ fi
 # Update the system first
 echo "Updating system..."
 sudo apt update
-echo "Checking homebrew"
-ensure_homebrew_installed
 
 echo "Installing CLI tools..."
-install_brew_packages "${BREW_CLI_DEV_TOOLS[@]}"
+install_apt_packages "${APT_CLI_DEV_TOOLS[@]}"
 # Install all packages
+echo "install fzf"
+install_fzf 
 echo "Installing Nerds Fonts..."
-install_brew_casks "${NERDS_FONTS[@]}"
+install_nerd_font "${NERDS_FONTS[@]}"
+
+echo "Setting up stowed config"
+dotfiles_setup
 echo "Installing TPM"
 install_tpm
 echo "Installing Zinit"
 install_zinit
-echo "Setting up stowed config"
-dotfiles_setup
+echo "Installing Ohmyposh"
+install_ohmyposh
 if [[ "$DESKTOP_INSTALL" == true ]]; then
 	echo "Installing APT DESKTOP TOOLS"
 	install_apt_packages "${APT_DESKTOP_TOOLS[@]}"

@@ -218,8 +218,8 @@ dotfiles_setup() {
         source ./stow.conf
     fi
     
-    stow "${STOW_LIST[@]}"  # Fixed: proper array expansion syntax
-    
+    stow --adopt  "${STOW_LIST[@]}"  # Fixed: proper array expansion syntax
+    git stash 
     cd "$ORIGINAL_DIR" || return 1  # Return to original directory
 }
 # Function to install Zinit plugin manager for Zsh
@@ -251,5 +251,195 @@ install_zinit() {
     fi
     
     echo "Zinit installed successfully!"
+    return 0
+}
+install_ohmyposh() {
+  # Define the standard installation directories from the documentation
+  local LOCAL_BIN="${HOME}/.local/bin"
+  local USER_BIN="/usr/local/bin"
+  
+  # The actual binary path
+  local OMP_BINARY="${LOCAL_BIN}/oh-my-posh"
+
+  # Check if the binary exists in the primary (local) location
+  if [ -f "$OMP_BINARY" ]; then
+    echo "✅ Oh My Posh is already installed at $OMP_BINARY."
+    return 0
+  fi
+
+  # Check if the binary exists in the alternative (system-wide) location
+  # This covers installations done via the second method in the OMP documentation
+  if [ -f "${USER_BIN}/oh-my-posh" ]; then
+    echo "✅ Oh My Posh is already installed at ${USER_BIN}/oh-my-posh."
+    return 0
+  fi
+  
+  # If not found, proceed with installation using the curl | bash method
+  echo "Installing Oh My Posh..."
+  curl -s https://ohmyposh.dev/install.sh | bash -s
+  
+  # Note: The install.sh script places the binary in ~/.local/bin/oh-my-posh
+
+  # Verify installation (Optional but highly recommended)
+  if [ -f "$OMP_BINARY" ]; then
+    echo "🎉 Oh My Posh installed successfully to $OMP_BINARY."
+  else
+    echo "❌ Installation failed or the binary was placed somewhere unexpected."
+    return 1
+  fi
+}
+
+install_nerd_font() {
+    # 1. Check for the required argument (font name)
+    if [ -z "$1" ]; then
+        echo "❌ Error: Please provide the base name of the Nerd Font to install (e.g., JetBrainsMono)."
+        echo "Usage: install_nerd_font <FontName>"
+        return 1
+    fi
+local GITHUB_API="https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest"
+    
+    # Use curl to fetch the release data and grep/sed to extract the tag_name
+    local LATEST_TAG
+    LATEST_TAG=$(curl -sL $GITHUB_API | grep '"tag_name":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')
+    if [ -z "$LATEST_TAG" ]; then
+        echo "❌ Error: Could not determine the latest Nerd Fonts release tag from GitHub."
+        return 1
+    fi
+    local FONT_NAME="$1"
+    local FONT_ZIP="${FONT_NAME}.zip"
+    local FONTS_DIR="${HOME}/.fonts"
+
+    local DOWNLOAD_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/${LATEST_TAG}/${FONT_ZIP}"
+    echo "Attempting to install Nerd Font: **${FONT_NAME}**"
+    echo "---"
+
+    # 2. Ensure the local fonts directory exists
+    if [ ! -d "$FONTS_DIR" ]; then
+        echo "Creating fonts directory: ${FONTS_DIR}"
+        mkdir -p "$FONTS_DIR"
+    fi
+
+    # 3. Download the font zip file
+    echo "Downloading from: ${DOWNLOAD_URL}"
+    if ! wget -q -P "$FONTS_DIR" "$DOWNLOAD_URL"; then
+        echo "❌ Error: Failed to download the font. Please verify the font name is correct and available in v3.0.2."
+        return 1
+    fi
+
+    # 4. Navigate to the fonts directory
+    cd "$FONTS_DIR" || { echo "❌ Error: Could not change directory to $FONTS_DIR"; return 1; }
+
+    # 5. Unzip and remove the temporary zip file
+    echo "Unzipping files..."
+    if ! unzip -q -o "$FONT_ZIP"; then
+        echo "❌ Error: Failed to unzip ${FONT_ZIP}. The downloaded file might be corrupted."
+        rm -f "$FONT_ZIP" # Cleanup bad download
+        return 1
+    fi
+    
+    echo "Cleaning up zip file..."
+    rm -f "$FONT_ZIP"
+
+    # 6. Rebuild the font cache
+    echo "Rebuilding font cache..."
+    if ! fc-cache -fv > /dev/null; then
+        echo "⚠️ Warning: Failed to rebuild font cache. You may need to run 'fc-cache -fv' manually."
+    fi
+
+    echo "---"
+    echo "🎉 **Successfully installed ${FONT_NAME} Nerd Font!**"
+    echo "You must now select this font in your terminal emulator or editor."
+}
+install_fzf(){
+    local FZF_DIR="${HOME}/.fzf"
+    
+    echo "--- FZF Installation Check ---"
+    
+    # Check if 'fzf' binary is in PATH or if the source directory exists
+    if command -v fzf &> /dev/null || [ -d "$FZF_DIR" ]; then
+        echo "✅ FZF is already installed or source directory exists."
+    else
+        echo "⚠️ FZF binary not found. Installing from GitHub source..."
+        
+        # Install FZF from GitHub
+        if git clone --depth 1 https://github.com/junegunn/fzf.git "$FZF_DIR"; then
+            echo "Successfully cloned FZF repository."
+            echo "Running FZF installer with automated choices (Key Bindings: Yes, Completion: Yes, Update .zshrc: No)."
+            
+            # Use printf to send automated inputs to the installer: y (key bindings), y (completion), n (update zshrc)
+            printf "y\ny\nn\n" | "$FZF_DIR/install"
+            
+        else
+            echo "❌ Error: Failed to clone FZF repository. Do you have 'git' installed?"
+            return 1
+        fi
+    fi
+}
+install_neovim_utility() {
+    echo "--- Neovim Installation Utility ---"
+    
+    local NEOVIM_ARCHIVE="nvim-linux-x86_64.tar.gz"
+    local NEOVIM_DOWNLOAD_URL="https://github.com/neovim/neovim/releases/latest/download/$NEOVIM_ARCHIVE"
+    local NEOVIM_INSTALL_DIR="/opt"
+    
+    # *** FINAL CORRECTION: Using the exact extracted folder name from your diagnostics ***
+    local NEOVIM_FOLDER_NAME="nvim-linux-x86_64" 
+    local NEOVIM_EXTRACTED_DIR="/opt/$NEOVIM_FOLDER_NAME"
+    local BINARY_SOURCE="$NEOVIM_EXTRACTED_DIR/bin/nvim"
+    # ************************************************************************************
+
+    echo "Downloading latest Neovim stable release..."
+
+    # 1. Download the latest tarball (in the current directory)
+    # The -s flag is for silent to clean up curl output, but -L is critical for following redirects
+    if ! curl -sLO "$NEOVIM_DOWNLOAD_URL"; then
+        echo "❌ Error: Failed to download Neovim from GitHub."
+        return 1
+    fi
+    
+    # 2. Check for sudo permissions (crucial for /opt)
+    if ! sudo -v &> /dev/null; then
+        echo "🚨 Authentication required: You will be prompted for your password to proceed."
+    fi
+
+    # 3. Clean up any previous installation directory
+    echo "Cleaning up old installation directory: $NEOVIM_EXTRACTED_DIR (requires sudo)..."
+    if ! sudo rm -rf "$NEOVIM_EXTRACTED_DIR"; then
+        echo "❌ Error: Failed to clean up previous Neovim directory."
+        return 1
+    fi
+
+    # 4. Extract the new version to /opt
+    echo "Extracting $NEOVIM_ARCHIVE to $NEOVIM_INSTALL_DIR (requires sudo)..."
+    # The tarball is extracted to /opt, creating the nvim-linux-x86_64 directory inside.
+    if ! sudo tar -C "$NEOVIM_INSTALL_DIR" -xzf "$NEOVIM_ARCHIVE"; then
+        echo "❌ Error: Failed to extract Neovim archive."
+        return 1
+    fi
+    
+    # 5. Clean up the downloaded archive
+    echo "Cleaning up downloaded file: $NEOVIM_ARCHIVE"
+    rm -f "$NEOVIM_ARCHIVE"
+
+    # 6. Verify installation 
+    if [ -f "$BINARY_SOURCE" ]; then
+        echo "✅ Neovim successfully installed to $NEOVIM_EXTRACTED_DIR."
+    else
+        echo "❌ Verification failed: Neovim binary not found at $BINARY_SOURCE."
+        # This line should now ONLY fail if GitHub changes the file structure again.
+        return 1
+    fi
+    
+    # 7. Create symbolic link in a common PATH location
+    local SYMLINK_TARGET="/usr/local/bin/nvim"
+
+    echo "Creating symbolic link for 'nvim' (requires sudo)..."
+    if ! sudo ln -sf "$BINARY_SOURCE" "$SYMLINK_TARGET"; then
+        echo "⚠️ Warning: Failed to create symbolic link in $SYMLINK_TARGET."
+    else
+        echo "✅ Symbolic link created: You can now run 'nvim'."
+    fi
+
+    echo "--- Neovim Setup Complete ---"
     return 0
 }
