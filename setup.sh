@@ -58,6 +58,8 @@ echo "Installing Zinit"
 install_zinit
 echo "Installing Ohmyposh"
 install_ohmyposh
+echo "Installing Neovim"
+install_neovim
 if [[ "$DESKTOP_INSTALL" == true ]]; then
 	echo "Installing APT DESKTOP TOOLS"
 	install_apt_packages "${APT_DESKTOP_TOOLS[@]}"

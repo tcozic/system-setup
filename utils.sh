@@ -375,7 +375,7 @@ install_fzf(){
         fi
     fi
 }
-install_neovim_utility() {
+install_neovim() {
     echo "--- Neovim Installation Utility ---"
     
     local NEOVIM_ARCHIVE="nvim-linux-x86_64.tar.gz"
